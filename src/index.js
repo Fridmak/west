@@ -107,27 +107,61 @@ class Gatling extends Creature {
 }
 
 class Rogue extends Creature {
-    constructor() {
-        super("Изгой", 2);
+    constructor(name = "Изгой", maxPower = 2, image) {
+        super(name, maxPower, image);
     }
 
-    beforeAttack(gameContext, continuation) {
-        const target = gameContext.oppositePlayer.table.find(c => c);
-        if (!target) return continuation();
+    static get abilitiesToSteal() {
+        return ['modifyDealedDamageToCreature', 'modifyDealedDamageToPlayer', 'modifyTakenDamage'];
+    }
 
-        const targetProto = Object.getPrototypeOf(target);
-        const stolenProps = ['modifyDealedDamageToCreature', 'modifyDealedDamageToPlayer', 'modifyTakenDamage'];
-        
-        stolenProps.forEach(prop => {
-            if (targetProto.hasOwnProperty(prop)) {
-                this[prop] = targetProto[prop];
-                delete targetProto[prop];
+    attack(gameContext, continuation) {
+        const { currentPlayer, oppositePlayer, updateView } = gameContext;
+        const targetCard = oppositePlayer.table.find(card => card);
+
+        if (!targetCard) {
+            continuation();
+            return;
+        }
+
+        if (targetCard instanceof Rogue) {
+            this.dealDamageToCreature(this.maxPower, targetCard, gameContext, continuation);
+            return;
+        }
+
+        const targetProto = Object.getPrototypeOf(targetCard);
+
+        const allCards = [...currentPlayer.table, ...oppositePlayer.table];
+        for (const card of allCards) {
+            if (card && Object.getPrototypeOf(card) === targetProto) {
+                Rogue.abilitiesToSteal.forEach(ability => {
+                    if (targetProto.hasOwnProperty(ability)) {
+                        this[ability] = targetProto[ability]; 
+                        delete targetProto[ability]; 
+                    }
+                });
             }
-        });
+        }
 
-        gameContext.updateView();
-        continuation();
+        updateView();
+
+        this.dealDamageToCreature(this.maxPower, targetCard, gameContext, continuation);
     }
+}
+
+class PseudoDuck extends Dog{
+    constructor(name = "Псевдо-утка", maxPower = 3) {
+        super(name, maxPower);
+    }
+
+    quacks() {
+        console.log('quack');
+    }
+
+    swims() {
+        console.log('float: both;')
+    }
+    
 }
 
 class Lad extends Card {
