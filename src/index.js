@@ -106,6 +106,30 @@ class Gatling extends Creature {
     }
 }
 
+class Rogue extends Creature {
+    constructor() {
+        super("Изгой", 2);
+    }
+
+    beforeAttack(gameContext, continuation) {
+        const target = gameContext.oppositePlayer.table.find(c => c);
+        if (!target) return continuation();
+
+        const targetProto = Object.getPrototypeOf(target);
+        const stolenProps = ['modifyDealedDamageToCreature', 'modifyDealedDamageToPlayer', 'modifyTakenDamage'];
+        
+        stolenProps.forEach(prop => {
+            if (targetProto.hasOwnProperty(prop)) {
+                this[prop] = targetProto[prop];
+                delete targetProto[prop];
+            }
+        });
+
+        gameContext.updateView();
+        continuation();
+    }
+}
+
 class Lad extends Card {
     constructor() {
         super('Браток', 2);
@@ -158,12 +182,13 @@ const seriffStartDeck = [
     new Duck(),
     new Duck(),
     new Duck(),
+    new Rogue(),
 ];
 const banditStartDeck = [
     new Lad(),
     new Lad(),
+    new Lad(),
 ];
-
 // Создание игры.
 const game = new Game(seriffStartDeck, banditStartDeck);
 
@@ -174,4 +199,3 @@ SpeedRate.set(1);
 game.play(false, (winner) => {
     alert('Победил ' + winner.name);
 });
-
