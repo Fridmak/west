@@ -13,6 +13,10 @@ function isDog(card) {
     return card instanceof Dog;
 }
 
+function isTrasher(card){
+    return card instanceof Trasher;
+}
+
 // Дает описание существа по схожести с утками и собаками
 function getCreatureDescription(card) {
     if (isDuck(card) && isDog(card)) {
@@ -24,12 +28,38 @@ function getCreatureDescription(card) {
     if (isDog(card)) {
         return 'Собака';
     }
+    if (isTrasher(card)){
+        return 'громила';
+    }
     return 'Существо';
 }
 
 class Creature extends Card {
     getDescriptions() {
         return [getCreatureDescription(this), ...super.getDescriptions()];
+    }
+}
+
+class Dog extends Creature {
+    constructor() {
+        super("Пес-бандит", 3);
+    }
+}
+
+class Trasher extends Dog {
+    constructor() {
+        super('Громила', 5);
+    }
+    
+    modifyTakenDamage(value, fromCard, gameContext, continuation) {
+        const newDamage = Math.max(value - 1, 0);
+        if (this.view) {
+            this.view.signalAbility(() => {continuation(newDamage);});
+        }
+    }
+    
+    getDescriptions() {
+        return [...super.getDescriptions(), 'При получении урона получает на 1 меньше'];
     }
 }
 
@@ -47,22 +77,14 @@ class Duck extends Creature {
     }
 }
 
-class Dog extends Creature {
-    constructor() {
-        super("Пес-бандит", 3);
-    }
-}
-
-
-
-
 const seriffStartDeck = [
+    new Duck(),
     new Duck(),
     new Duck(),
     new Duck(),
 ];
 const banditStartDeck = [
-    new Dog(),
+    new Trasher(),
 ];
 
 
