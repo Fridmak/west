@@ -77,16 +77,46 @@ class Duck extends Creature {
     }
 }
 
+class Gatling extends Creature {
+    constructor() {
+        super("Гатлинг", 6);
+    }
+
+    attack(gameContext, continuation) {
+        const taskQueue = new TaskQueue();
+        const {oppositePlayer} = gameContext;
+
+        taskQueue.push(onDone => this.view.showAttack(onDone));
+        
+        oppositePlayer.table.forEach((card, index) => {
+            taskQueue.push(onDone => {
+                if (card) {
+                    this.dealDamageToCreature(2, card, gameContext, onDone);
+                } else {
+                    onDone();
+                }
+            });
+        });
+
+        taskQueue.continueWith(continuation);
+    }
+
+    getDescriptions() {
+        return [...super.getDescriptions(), 'При атаке наносит 2 урона всем картам противника по очереди'];
+    }
+}
+
 const seriffStartDeck = [
     new Duck(),
     new Duck(),
     new Duck(),
-    new Duck(),
+    new Gatling(),
 ];
 const banditStartDeck = [
     new Trasher(),
+    new Dog(),
+    new Dog(),
 ];
-
 
 // Создание игры.
 const game = new Game(seriffStartDeck, banditStartDeck);
